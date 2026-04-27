@@ -117,12 +117,25 @@
         "__IMTCONN__": 8110896
       },
       "mapper": {
+        "from": "drive",
+        "mode": "fromAll",
+        "limit": "1",
+        "filter": [
+          [
+            {
+              "a": "A",
+              "b": "{{replace(replace(replace(replace(1.From; \"whatsapp:\"; \"\"); \"+\"; \"\"); \"-\"; \"\"); \" \"; \"\")}}",
+              "o": "text:equal"
+            }
+          ]
+        ],
+        "sheetId": "whatsapp",
+        "sortOrder": "asc",
         "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-        "sheetName": "whatsapp",
-        "filter": {
-          "phone": "{{replace(replace(replace(replace(1.From; \"whatsapp:\"; \"\"); \"+\"; \"\"); \"-\"; \"\"); \" \"; \"\")}}"
-        },
-        "limit": 1
+        "tableFirstRow": "A1:Z1",
+        "includesHeaders": true,
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING"
       },
       "metadata": {
         "designer": {
@@ -150,11 +163,11 @@
           },
           {
             "name": "language",
-            "value": "{{ifempty(10.language; if(contains(lower(1.Body); \"labas\") or contains(lower(1.Body); \"sveiki\") or startsWith(1.Body; \"Ar\"); \"lt\"; if(contains(lower(1.Body); \"привет\") or contains(lower(1.Body); \"здравствуйте\"); \"ru\"; if(contains(lower(1.Body); \"hi\") or contains(lower(1.Body); \"hello\") or contains(lower(1.Body); \"good\"); \"en\"; \"he\"))))}}"
+            "value": "{{ifempty(10.C; if(contains(lower(1.Body); \"labas\") or contains(lower(1.Body); \"sveiki\") or startsWith(1.Body; \"Ar\"); \"lt\"; if(contains(lower(1.Body); \"привет\") or contains(lower(1.Body); \"здравствуйте\"); \"ru\"; if(contains(lower(1.Body); \"hi\") or contains(lower(1.Body); \"hello\") or contains(lower(1.Body); \"good\"); \"en\"; \"he\"))))}}"
           },
           {
             "name": "current_step",
-            "value": "{{ifempty(10.current_step; \"new\")}}"
+            "value": "{{ifempty(10.D; \"new\")}}"
           },
           {
             "name": "is_button_click",
@@ -179,6 +192,7 @@
       "module": "builtin:BasicRouter",
       "version": 1,
       "mapper": null,
+      "parameters": {},
       "metadata": {
         "designer": {
           "x": 1200,
@@ -193,7 +207,7 @@
             "conditions": [
               [
                 {
-                  "a": "{{if(10.__ROW_NUMBER__; if(dateDiff(11.now_iso; 10.last_message_at; \"hours\") > 48; \"true\"; \"false\"); \"true\")}}",
+                  "a": "{{if(10.__ROW_NUMBER__; if(dateDiff(11.now_iso; 10.L; \"hours\") > 48; \"true\"; \"false\"); \"true\")}}",
                   "o": "text:equal",
                   "b": "true"
                 }
@@ -209,25 +223,32 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
+                "from": "drive",
+                "mode": "fromAll",
                 "values": {
-                  "phone": "{{11.phone_clean}}",
-                  "profile_name": "{{1.ProfileName}}",
-                  "language": "{{11.language}}",
-                  "current_step": "root",
-                  "service_chosen": "",
-                  "subservice": "",
-                  "collected_name": "",
-                  "collected_website": "",
-                  "collected_email": "",
-                  "collected_phone": "",
-                  "first_message_at": "{{11.now_iso}}",
-                  "last_message_at": "{{11.now_iso}}",
-                  "booking_url_sent": "false",
-                  "booking_confirmed": "false",
-                  "freechat_history": "[]"
-                }
+                  "0": "{{11.phone_clean}}",
+                  "1": "{{1.ProfileName}}",
+                  "2": "{{11.language}}",
+                  "3": "root",
+                  "4": "",
+                  "5": "",
+                  "6": "",
+                  "7": "",
+                  "8": "",
+                  "9": "",
+                  "10": "{{11.now_iso}}",
+                  "11": "{{11.now_iso}}",
+                  "12": "false",
+                  "13": "false",
+                  "14": "[]"
+                },
+                "sheetId": "whatsapp",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "tableFirstRow": "A1:O1",
+                "insertUnformatted": false,
+                "valueInputOption": "USER_ENTERED",
+                "insertDataOption": "INSERT_ROWS"
               },
               "metadata": {
                 "designer": {
@@ -331,14 +352,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "website_l1",
-                  "service_chosen": "website",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "website_l1",
+                  "4": "website",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -442,14 +468,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "aibot",
-                  "service_chosen": "aibot",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "aibot",
+                  "4": "aibot",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -553,14 +584,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "aisec",
-                  "service_chosen": "aisec",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "aisec",
+                  "4": "aisec",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -664,14 +700,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "freechat",
-                  "service_chosen": "freechat",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "freechat",
+                  "4": "freechat",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -775,14 +816,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "website_l2_new",
-                  "subservice": "website_new",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "website_l2_new",
+                  "5": "website_new",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -886,14 +932,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "website_l2_update",
-                  "subservice": "website_update",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "website_l2_update",
+                  "5": "website_update",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -997,14 +1048,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "website_new_info",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "website_new_info",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1108,14 +1164,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "website_new_store",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "website_new_store",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1219,14 +1280,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "website_update_info",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "website_update_info",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1330,14 +1396,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "website_update_store",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "website_update_store",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1441,14 +1512,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "aibot_reply",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "aibot_reply",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1552,14 +1628,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "aibot_collect",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "aibot_collect",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1663,14 +1744,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_website",
-                  "subservice": "aibot_store",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_website",
+                  "5": "aibot_store",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1774,14 +1860,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "aibot_chat",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "aibot_chat",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1885,14 +1976,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "aisec_phone",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "aisec_phone",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -1996,14 +2092,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_website",
-                  "subservice": "aisec_web",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_website",
+                  "5": "aisec_web",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2107,14 +2208,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "subservice": "aisec_queue",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "5": "aisec_queue",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2218,14 +2324,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_website",
-                  "subservice": "aisec_sales",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_website",
+                  "5": "aisec_sales",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2329,14 +2440,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "collected_website": "{{1.Body}}",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "7": "{{1.Body}}",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2440,14 +2556,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_email",
-                  "collected_name": "{{1.Body}}",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_email",
+                  "6": "{{1.Body}}",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2551,14 +2672,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_phone",
-                  "collected_email": "{{1.Body}}",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_phone",
+                  "8": "{{1.Body}}",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2662,15 +2788,20 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "booking",
-                  "collected_phone": "{{if(contains(lower(1.Body); \"yes\") or contains(lower(1.Body); \"כן\") or contains(lower(1.Body); \"да\") or contains(lower(1.Body); \"taip\"); 11.phone_clean; 1.Body)}}",
-                  "booking_url_sent": "true",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "booking",
+                  "9": "{{if(contains(lower(1.Body); \"yes\") or contains(lower(1.Body); \"כן\") or contains(lower(1.Body); \"да\") or contains(lower(1.Body); \"taip\"); 11.phone_clean; 1.Body)}}",
+                  "12": "true",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2774,14 +2905,19 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "done",
-                  "booking_confirmed": "true",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "done",
+                  "13": "true",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2800,7 +2936,7 @@
               },
               "mapper": {
                 "chatId": "1034122765",
-                "text": "🎯 NAUJAS LEAD!\n\n📞 Tel: {{11.phone_clean}}\n👤 Vardas: {{10.collected_name}}\n🌐 Saitas: {{10.collected_website}}\n📧 Email: {{10.collected_email}}\n\n🛠 Paslauga: {{10.service_chosen}} → {{10.subservice}}\n🌍 Kalba: {{11.language}}\n📅 Susitikimas: https://cal.com/petruskevich/30min\n\n🕒 {{11.now_iso}}",
+                "text": "🎯 NAUJAS LEAD!\n\n📞 Tel: {{11.phone_clean}}\n👤 Vardas: {{10.G}}\n🌐 Saitas: {{10.H}}\n📧 Email: {{10.I}}\n\n🛠 Paslauga: {{10.E}} → {{10.F}}\n🌍 Kalba: {{11.language}}\n📅 Susitikimas: https://cal.com/petruskevich/30min\n\n🕒 {{11.now_iso}}",
                 "parseMode": "",
                 "disableNotification": false
               },
@@ -2836,13 +2972,18 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "current_step": "collect_name",
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "3": "collect_name",
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
@@ -2946,12 +3087,17 @@
                 "__IMTCONN__": 8110896
               },
               "mapper": {
-                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
-                "sheetName": "whatsapp",
-                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "from": "drive",
+                "mode": "select",
                 "values": {
-                  "last_message_at": "{{11.now_iso}}"
-                }
+                  "11": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "includesHeaders": true,
+                "useColumnHeaders": false,
+                "valueInputOption": "USER_ENTERED"
               },
               "metadata": {
                 "designer": {
