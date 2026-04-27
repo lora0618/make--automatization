@@ -1,0 +1,128 @@
+{
+  "name": "W6. WhatsApp Menu Bot — Twilio + Cal.com",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 2218244,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {"x": 0, "y": 0},
+        "restore": {
+          "parameters": {
+            "hook": {
+              "data": {"editable": "true"},
+              "label": "WA Inbound"
+            }
+          }
+        },
+        "parameters": [
+          {"name": "hook", "type": "hook:gateway-webhook", "label": "Webhook", "required": true},
+          {"name": "maxResults", "type": "number", "label": "Max results"}
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "gateway:WebhookRespond",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "body": "<Response></Response>",
+        "status": "200",
+        "headers": [
+          {"name": "Content-Type", "value": "text/xml"}
+        ]
+      },
+      "metadata": {
+        "designer": {"x": 300, "y": 0},
+        "restore": {
+          "expect": {
+            "headers": {"mode": "chose", "items": [null]}
+          }
+        },
+        "parameters": [],
+        "expect": [
+          {"name": "status", "type": "uinteger", "label": "Status", "required": true, "validate": {"max": 999, "min": 100}},
+          {"name": "body", "type": "any", "label": "Body"},
+          {"name": "headers", "type": "array", "label": "Custom headers", "spec": [
+            {"name": "name", "type": "text", "label": "Name", "required": true},
+            {"name": "value", "type": "text", "label": "Value", "required": true}
+          ]}
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "module": "http:ActionSendData",
+      "version": 3,
+      "parameters": {
+        "handleErrors": false,
+        "useNewZLibDeCompress": true
+      },
+      "mapper": {
+        "ca": "",
+        "qs": [],
+        "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+        "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid=HX5f9ab1f6ffbf4759bfdba29f141e9d71",
+        "gzip": true,
+        "method": "post",
+        "headers": [],
+        "timeout": "30",
+        "useMtls": false,
+        "authPass": "{TWILIO_API_KEY_SECRET}",
+        "authUser": "{TWILIO_API_KEY_SID}",
+        "bodyType": "raw",
+        "contentType": "text/plain",
+        "serializeUrl": false,
+        "shareCookies": false,
+        "parseResponse": true,
+        "followRedirect": true,
+        "useQuerystring": false,
+        "followAllRedirects": false,
+        "rejectUnauthorized": true
+      },
+      "metadata": {
+        "designer": {"x": 600, "y": 0},
+        "restore": {
+          "expect": {
+            "qs": {"mode": "chose"},
+            "method": {"mode": "chose", "label": "POST"},
+            "headers": {"mode": "chose"},
+            "bodyType": {"label": "Raw"},
+            "contentType": {"label": "Text (text/plain)"}
+          }
+        },
+        "parameters": [
+          {"name": "handleErrors", "type": "boolean", "label": "Evaluate all states as errors (except for 2xx and 3xx )", "required": true},
+          {"name": "useNewZLibDeCompress", "type": "hidden"}
+        ]
+      }
+    }
+  ],
+  "metadata": {
+    "zone": "us2.make.com",
+    "notes": [],
+    "instant": true,
+    "version": 1,
+    "designer": {"orphans": []},
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {"type": "immediately"},
+  "interface": {"input": [], "output": []}
+}
