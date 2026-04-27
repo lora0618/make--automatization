@@ -139,3 +139,40 @@ Make WebhookRespond su `body: ""` (tuščiu) grąžino default fallback string `
 - Šioje Cursor Cloud aplinkoje Make MCP įrankiai `scenarios_update` ir `executions_list` nebuvo prijungti / nebuvo matomi agentui.
 - Dėl to scenarijaus ID `4866621` atnaujinimas Make paskyroje ir `executions_list` BundleValidationError patikra nebuvo įvykdyti iš šio repo darbo.
 - Paruoštą `W6_blueprint_current.json` reikia kelti per Make MCP `scenarios_update` aplinkoje, kurioje tie įrankiai prijungti, ir po kiekvieno modulio pataisymo tikrinti `executions_list`.
+
+---
+
+## Etapas 7: Make import schema fix (2026-04-27)
+
+### Problema
+- Make import atmetė ankstesnį `W6_blueprint_current.json` su `Invalid blueprint`.
+- Priežastis: Google Sheets moduliai ir Router filtrai naudojo supaprastintą / neteisingą blueprint sintaksę.
+
+### Pataisyta pagal `MAKE_SCHEMAS_REFERENCE.md`
+- `google-sheets:searchRows` perrašytas į tikslų working scenarijaus formatą:
+  - `from: "drive"`, `mode: "fromAll"`, `sheetId: "whatsapp"`.
+  - `filter` dabar yra array-of-arrays: `[[{a, b, o}]]`.
+  - Filtras ieško pagal stulpelio raidę `A`, ne pagal field name `phone`.
+  - Įtraukti `tableFirstRow`, `includesHeaders`, `valueRenderOption`, `dateTimeRenderOption`.
+- Visi `google-sheets:addRow` moduliai perrašyti su indeksuotais `values` raktais (`"0"`, `"1"`, `"3"`...), ne field names.
+- Visi `google-sheets:updateRow` moduliai perrašyti su:
+  - `mode: "select"`.
+  - `rowNumber: "{{10.__ROW_NUMBER__}}"`.
+  - `useColumnHeaders: false`.
+  - indeksuotais `values` raktais.
+- `builtin:BasicRouter` papildytas `parameters: {}` ir palikti filtrai tik `conditions: [[{a,o,b?}]]` formatu.
+- Visi searchRows rezultato field access pataisyti iš `{{10.current_step}}` tipo į stulpelių raides:
+  - `{{10.C}}` language.
+  - `{{10.D}}` current_step.
+  - `{{10.E}}` service_chosen.
+  - `{{10.F}}` subservice.
+  - `{{10.G}}`, `{{10.H}}`, `{{10.I}}` lead laukams.
+  - `{{10.L}}` last_message_at.
+- Twilio HTTP moduliai ir WebhookRespond palikti nepakeisti.
+
+### Patikra
+- `python3 -m json.tool W6_blueprint_current.json` praeina.
+- Custom JSON patikra patvirtino:
+  - 27 Sheets moduliai turi reference schema laukus.
+  - 1 BasicRouter turi array-of-arrays filter conditions.
+  - HTTP moduliai ir WebhookRespond nepakeisti nuo bazinio blueprint.
