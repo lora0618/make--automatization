@@ -1,0 +1,3335 @@
+{
+  "name": "W6. WhatsApp Menu Bot — Twilio + Cal.com",
+  "flow": [
+    {
+      "id": 1,
+      "module": "gateway:CustomWebHook",
+      "version": 1,
+      "parameters": {
+        "hook": 2218244,
+        "maxResults": 1
+      },
+      "mapper": {},
+      "metadata": {
+        "designer": {
+          "x": 0,
+          "y": 0
+        },
+        "restore": {
+          "parameters": {
+            "hook": {
+              "data": {
+                "editable": "true"
+              },
+              "label": "WA Inbound"
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "hook",
+            "type": "hook:gateway-webhook",
+            "label": "Webhook",
+            "required": true
+          },
+          {
+            "name": "maxResults",
+            "type": "number",
+            "label": "Max results"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "module": "gateway:WebhookRespond",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "body": "<Response></Response>",
+        "status": "200",
+        "headers": [
+          {
+            "name": "Content-Type",
+            "value": "text/xml"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 300,
+          "y": 0
+        },
+        "restore": {
+          "expect": {
+            "headers": {
+              "mode": "chose",
+              "items": [
+                null
+              ]
+            }
+          }
+        },
+        "parameters": [],
+        "expect": [
+          {
+            "name": "status",
+            "type": "uinteger",
+            "label": "Status",
+            "required": true,
+            "validate": {
+              "max": 999,
+              "min": 100
+            }
+          },
+          {
+            "name": "body",
+            "type": "any",
+            "label": "Body"
+          },
+          {
+            "name": "headers",
+            "type": "array",
+            "label": "Custom headers",
+            "spec": [
+              {
+                "name": "name",
+                "type": "text",
+                "label": "Name",
+                "required": true
+              },
+              {
+                "name": "value",
+                "type": "text",
+                "label": "Value",
+                "required": true
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "module": "google-sheets:filterRows",
+      "version": 2,
+      "parameters": {
+        "__IMTCONN__": 8110896
+      },
+      "mapper": {
+        "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+        "filter": [
+          [
+            {
+              "a": "A",
+              "o": "text:equal",
+              "b": "{{replace(replace(replace(replace(1.From; \"whatsapp:\"; \"\"); \"+\"; \"\"); \"-\"; \"\"); \" \"; \"\")}}"
+            }
+          ]
+        ],
+        "limit": "1",
+        "from": "drive",
+        "sortOrder": "asc",
+        "tableFirstRow": "A1:O1",
+        "includesHeaders": true,
+        "valueRenderOption": "FORMATTED_VALUE",
+        "dateTimeRenderOption": "FORMATTED_STRING",
+        "sheetId": "whatsapp",
+        "mode": "fromAll",
+        "valueInputOption": "USER_ENTERED"
+      },
+      "metadata": {
+        "designer": {
+          "x": 600,
+          "y": 0
+        },
+        "label": "Find WhatsApp session by phone"
+      }
+    },
+    {
+      "id": 11,
+      "module": "util:SetVariables",
+      "version": 1,
+      "parameters": {},
+      "mapper": {
+        "scope": "roundtrip",
+        "variables": [
+          {
+            "name": "phone_clean",
+            "value": "{{replace(replace(replace(replace(1.From; \"whatsapp:\"; \"\"); \"+\"; \"\"); \"-\"; \"\"); \" \"; \"\")}}"
+          },
+          {
+            "name": "user_input",
+            "value": "{{ifempty(1.ListItemId; ifempty(1.ButtonPayload; 1.Body))}}"
+          },
+          {
+            "name": "language",
+            "value": "{{if(contains(1.Body; \"ש\") or contains(1.Body; \"ל\") or contains(1.Body; \"ב\") or contains(1.Body; \"א\") or contains(1.Body; \"ם\"); \"he\"; if(contains(lower(1.Body); \"labas\") or contains(lower(1.Body); \"sveiki\"); \"lt\"; if(contains(1.Body; \"привет\") or contains(1.Body; \"здравствуйте\"); \"ru\"; if(contains(lower(1.Body); \"hello\") or contains(lower(1.Body); \"hi \"); \"en\"; ifempty(10.C; \"he\")))))}}"
+          },
+          {
+            "name": "current_step",
+            "value": "{{ifempty(10.D; \"new\")}}"
+          },
+          {
+            "name": "is_button_click",
+            "value": "{{if(1.ListItemId or 1.ButtonPayload; \"true\"; \"false\")}}"
+          },
+          {
+            "name": "now_iso",
+            "value": "{{now}}"
+          }
+        ]
+      },
+      "metadata": {
+        "designer": {
+          "x": 900,
+          "y": 0
+        },
+        "label": "Set W6 variables"
+      }
+    },
+    {
+      "id": 20,
+      "module": "builtin:BasicRouter",
+      "version": 1,
+      "mapper": null,
+      "metadata": {
+        "designer": {
+          "x": 1200,
+          "y": 0
+        },
+        "label": "Route by current_step and button"
+      },
+      "routes": [
+        {
+          "filter": {
+            "name": "ROUTE_1 new session or 48h expired",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "notexist"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 101,
+              "module": "google-sheets:addRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "values": {
+                  "0": "{{11.phone_clean}}",
+                  "1": "{{1.ProfileName}}",
+                  "2": "{{11.language}}",
+                  "3": "root",
+                  "4": "",
+                  "5": "",
+                  "6": "",
+                  "7": "",
+                  "8": "",
+                  "9": "",
+                  "10": "{{11.now_iso}}",
+                  "11": "{{11.now_iso}}",
+                  "12": "false",
+                  "13": "false",
+                  "14": "[]"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "fromAll",
+                "insertDataOption": "INSERT_ROWS",
+                "insertUnformatted": false,
+                "tableFirstRow": "A1:O1",
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": -600
+                },
+                "label": "Add new WhatsApp session"
+              }
+            },
+            {
+              "id": 102,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX7748c82210214509d14d5b6215692c42\"; if(11.language = \"ru\"; \"HXfecd7a43aa9fe9b3bee4a847c991d823\"; if(11.language = \"en\"; \"HXae47a283a2c1c0e47db5e1b926134817\"; \"HX5f9ab1f6ffbf4759bfdba29f141e9d71\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -600
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send root_menu_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_2 root choice website",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"root\" and 11.user_input = \"service_website\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 200,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "website_l1",
+                  "service_chosen": "website",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": -360
+                },
+                "label": "Root -> website"
+              }
+            },
+            {
+              "id": 201,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX09b9170f744983e0419fddb2c2a2fe7c\"; if(11.language = \"ru\"; \"HX65c73cb06940dd909b47d0c4fac61944\"; if(11.language = \"en\"; \"HX17cbe2b6e6188d81ae8d4d30b3bc858f\"; \"HX9c93738967cc510f713b1c00d87b762e\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -360
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send website_l1_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_2 root choice aibot",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"root\" and 11.user_input = \"service_aibot\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 210,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "aibot",
+                  "service_chosen": "aibot",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": -240
+                },
+                "label": "Root -> aibot"
+              }
+            },
+            {
+              "id": 211,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX0d111afb556194c3c5ab3a08f31abc99\"; if(11.language = \"ru\"; \"HXe6940a92b57e9e8a301116d7b7aa10fc\"; if(11.language = \"en\"; \"HX0ae83e2c8a8fb33f239a0bbda025ae9b\"; \"HX803a1a016921b1c87a000a4f9bb23010\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -240
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send aibot_menu_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_2 root choice aisec",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"root\" and 11.user_input = \"service_aisec\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 220,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "aisec",
+                  "service_chosen": "aisec",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": -120
+                },
+                "label": "Root -> aisec"
+              }
+            },
+            {
+              "id": 221,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX6739c1dbcb148faaaaab834c6223370b\"; if(11.language = \"ru\"; \"HXbde14e19b51d722391788f4ab39255f4\"; if(11.language = \"en\"; \"HXe8c877c5968fa400cb89932b24ee645b\"; \"HXeeea3ad55c17dd2d2fac992a83ff4300\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": -120
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send aisec_menu_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_2 root choice freechat",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"root\" and 11.user_input = \"service_freechat\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 230,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "freechat",
+                  "service_chosen": "freechat",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 0
+                },
+                "label": "Root -> freechat"
+              }
+            },
+            {
+              "id": 231,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 0
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Freechat welcome prompt"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_3 website_l1 website_new",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"website_l1\" and 11.user_input = \"website_new\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 300,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "website_l2_new",
+                  "subservice": "website_new",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 180
+                },
+                "label": "Website L1 -> website_new"
+              }
+            },
+            {
+              "id": 301,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX0f87f0fdb6a71eab758ca332aa404539\"; if(11.language = \"ru\"; \"HXf93254ab4ba511020ff0954921f84f5c\"; if(11.language = \"en\"; \"HX898ea986ad91213bee565f61129d8e31\"; \"HX5094c1d46e00b822b1803908ebada1d5\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 180
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send website_l2_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_3 website_l1 website_update",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"website_l1\" and 11.user_input = \"website_update\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 310,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "website_l2_update",
+                  "subservice": "website_update",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 300
+                },
+                "label": "Website L1 -> website_update"
+              }
+            },
+            {
+              "id": 311,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HX0f87f0fdb6a71eab758ca332aa404539\"; if(11.language = \"ru\"; \"HXf93254ab4ba511020ff0954921f84f5c\"; if(11.language = \"en\"; \"HX898ea986ad91213bee565f61129d8e31\"; \"HX5094c1d46e00b822b1803908ebada1d5\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 300
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send website_l2_{lang}"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_4 website_l2 website_new_info",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"website_l2_new\" and 11.user_input = \"website_new_info\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 400,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "website_new_info",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 480
+                },
+                "label": "Website L2 -> website_new_info"
+              }
+            },
+            {
+              "id": 401,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 480
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_4 website_l2 website_new_store",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"website_l2_new\" and 11.user_input = \"website_new_store\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 410,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "website_new_store",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 600
+                },
+                "label": "Website L2 -> website_new_store"
+              }
+            },
+            {
+              "id": 411,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 600
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_4 website_l2 website_update_info",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if((11.current_step = \"website_l2_new\" or 11.current_step = \"website_l2_update\") and 11.user_input = \"website_update_info\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 420,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "website_update_info",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 720
+                },
+                "label": "Website L2 -> website_update_info"
+              }
+            },
+            {
+              "id": 421,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 720
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_4 website_l2 website_update_store",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if((11.current_step = \"website_l2_new\" or 11.current_step = \"website_l2_update\") and 11.user_input = \"website_update_store\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 430,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "website_update_store",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 840
+                },
+                "label": "Website L2 -> website_update_store"
+              }
+            },
+            {
+              "id": 431,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 840
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_5 aibot aibot_reply",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aibot\" and 11.user_input = \"aibot_reply\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 500,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "aibot_reply",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1020
+                },
+                "label": "AI Bot -> aibot_reply"
+              }
+            },
+            {
+              "id": 501,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1020
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_5 aibot aibot_collect",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aibot\" and 11.user_input = \"aibot_collect\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 510,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "aibot_collect",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1140
+                },
+                "label": "AI Bot -> aibot_collect"
+              }
+            },
+            {
+              "id": 511,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1140
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_5 aibot aibot_store",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aibot\" and 11.user_input = \"aibot_store\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 520,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_website",
+                  "subservice": "aibot_store",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1260
+                },
+                "label": "AI Bot -> aibot_store"
+              }
+            },
+            {
+              "id": 521,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Atsi%C5%B3sk%20savo%20svetain%C4%97s%20nuorod%C4%85.\"; if(11.language = \"ru\"; \"%D0%9E%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D1%8C%D1%82%D0%B5%20%D1%81%D1%81%D1%8B%D0%BB%D0%BA%D1%83%20%D0%BD%D0%B0%20%D0%B2%D0%B0%D1%88%20%D1%81%D0%B0%D0%B9%D1%82.\"; if(11.language = \"en\"; \"Please%20send%20your%20website%20link.\"; \"%D7%A9%D7%9C%D7%97%D7%95%20%D7%A7%D7%99%D7%A9%D7%95%D7%A8%20%D7%9C%D7%90%D7%AA%D7%A8%20%D7%A9%D7%9C%D7%9B%D7%9D.\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1260
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask website"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_5 aibot aibot_chat",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aibot\" and 11.user_input = \"aibot_chat\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 530,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "aibot_chat",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1380
+                },
+                "label": "AI Bot -> aibot_chat"
+              }
+            },
+            {
+              "id": 531,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1380
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_6 aisec aisec_phone",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aisec\" and 11.user_input = \"aisec_phone\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 600,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "aisec_phone",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1560
+                },
+                "label": "AI Secretary -> aisec_phone"
+              }
+            },
+            {
+              "id": 601,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1560
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_6 aisec aisec_web",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aisec\" and 11.user_input = \"aisec_web\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 610,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_website",
+                  "subservice": "aisec_web",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1680
+                },
+                "label": "AI Secretary -> aisec_web"
+              }
+            },
+            {
+              "id": 611,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Atsi%C5%B3sk%20savo%20svetain%C4%97s%20nuorod%C4%85.\"; if(11.language = \"ru\"; \"%D0%9E%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D1%8C%D1%82%D0%B5%20%D1%81%D1%81%D1%8B%D0%BB%D0%BA%D1%83%20%D0%BD%D0%B0%20%D0%B2%D0%B0%D1%88%20%D1%81%D0%B0%D0%B9%D1%82.\"; if(11.language = \"en\"; \"Please%20send%20your%20website%20link.\"; \"%D7%A9%D7%9C%D7%97%D7%95%20%D7%A7%D7%99%D7%A9%D7%95%D7%A8%20%D7%9C%D7%90%D7%AA%D7%A8%20%D7%A9%D7%9C%D7%9B%D7%9D.\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1680
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask website"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_6 aisec aisec_queue",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aisec\" and 11.user_input = \"aisec_queue\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 620,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "subservice": "aisec_queue",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1800
+                },
+                "label": "AI Secretary -> aisec_queue"
+              }
+            },
+            {
+              "id": 621,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1800
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_6 aisec aisec_sales",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"aisec\" and 11.user_input = \"aisec_sales\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 630,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_website",
+                  "subservice": "aisec_sales",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 1920
+                },
+                "label": "AI Secretary -> aisec_sales"
+              }
+            },
+            {
+              "id": 631,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Atsi%C5%B3sk%20savo%20svetain%C4%97s%20nuorod%C4%85.\"; if(11.language = \"ru\"; \"%D0%9E%D1%82%D0%BF%D1%80%D0%B0%D0%B2%D1%8C%D1%82%D0%B5%20%D1%81%D1%81%D1%8B%D0%BB%D0%BA%D1%83%20%D0%BD%D0%B0%20%D0%B2%D0%B0%D1%88%20%D1%81%D0%B0%D0%B9%D1%82.\"; if(11.language = \"en\"; \"Please%20send%20your%20website%20link.\"; \"%D7%A9%D7%9C%D7%97%D7%95%20%D7%A7%D7%99%D7%A9%D7%95%D7%A8%20%D7%9C%D7%90%D7%AA%D7%A8%20%D7%A9%D7%9C%D7%9B%D7%9D.\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 1920
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask website"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_7 collect website",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"collect_website\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 700,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "collected_website": "{{1.Body}}",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2100
+                },
+                "label": "Save website and ask name"
+              }
+            },
+            {
+              "id": 701,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2100
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_8 collect name",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"collect_name\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 800,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_email",
+                  "collected_name": "{{1.Body}}",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2220
+                },
+                "label": "Save name and choose next capture step"
+              }
+            },
+            {
+              "id": 801,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20el.%20pa%C5%A1tas%3F\"; if(11.language = \"ru\"; \"%D0%A3%D0%BA%D0%B0%D0%B6%D0%B8%D1%82%D0%B5%20%D0%B2%D0%B0%D1%88%20email.\"; if(11.language = \"en\"; \"What%20is%20your%20email%20address%3F\"; \"%D7%9E%D7%94%20%D7%9B%D7%AA%D7%95%D7%91%D7%AA%20%D7%94%D7%90%D7%99%D7%9E%D7%99%D7%99%D7%9C%20%D7%A9%D7%9C%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2220
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask email"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_9 collect email",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"collect_email\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 900,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_phone",
+                  "collected_email": "{{1.Body}}",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2340
+                },
+                "label": "Save email and ask phone"
+              }
+            },
+            {
+              "id": 901,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20telefono%20numeris%3F%20Jei%20tinka%20%C5%A1is%20WhatsApp%20numeris%2C%20para%C5%A1yk%20taip.\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%D0%BE%D0%B9%20%D1%83%20%D0%B2%D0%B0%D1%81%20%D0%BD%D0%BE%D0%BC%D0%B5%D1%80%20%D1%82%D0%B5%D0%BB%D0%B5%D1%84%D0%BE%D0%BD%D0%B0%3F%20%D0%95%D1%81%D0%BB%D0%B8%20%D1%8D%D1%82%D0%BE%20%D1%82%D0%B5%D0%BA%D1%83%D1%89%D0%B8%D0%B9%20%D0%BD%D0%BE%D0%BC%D0%B5%D1%80%2C%20%D0%BD%D0%B0%D0%BF%D0%B8%D1%88%D0%B8%D1%82%D0%B5%20%D0%B4%D0%B0.\"; if(11.language = \"en\"; \"What%20is%20your%20phone%20number%3F%20If%20this%20WhatsApp%20number%20is%20correct%2C%20reply%20yes.\"; \"%D7%9E%D7%94%20%D7%9E%D7%A1%D7%A4%D7%A8%20%D7%94%D7%98%D7%9C%D7%A4%D7%95%D7%9F%20%D7%A9%D7%9C%D7%9A%3F%20%D7%90%D7%9D%20%D7%96%D7%94%20%D7%94%D7%9E%D7%A1%D7%A4%D7%A8%20%D7%94%D7%A0%D7%95%D7%9B%D7%97%D7%99%2C%20%D7%9B%D7%AA%D7%91%D7%95%20%D7%9B%D7%9F.\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2340
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask phone"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_10 collect phone and send booking URL",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"collect_phone\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 1000,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "booking",
+                  "collected_phone": "{{if(contains(lower(1.Body); \"yes\") or contains(lower(1.Body); \"כן\") or contains(lower(1.Body); \"да\") or contains(lower(1.Body); \"taip\"); 11.phone_clean; 1.Body)}}",
+                  "booking_url_sent": "true",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2460
+                },
+                "label": "Save phone and mark booking URL sent"
+              }
+            },
+            {
+              "id": 1001,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Pasirink%20susitikimo%20laik%C4%85%3A%20https%3A%2F%2Fcal.com%2Fpetruskevich%2F30min\"; if(11.language = \"ru\"; \"%D0%92%D1%8B%D0%B1%D0%B5%D1%80%D0%B8%D1%82%D0%B5%20%D0%B2%D1%80%D0%B5%D0%BC%D1%8F%20%D0%B2%D1%81%D1%82%D1%80%D0%B5%D1%87%D0%B8%3A%20https%3A%2F%2Fcal.com%2Fpetruskevich%2F30min\"; if(11.language = \"en\"; \"Choose%20a%20meeting%20time%3A%20https%3A%2F%2Fcal.com%2Fpetruskevich%2F30min\"; \"%D7%91%D7%97%D7%A8%D7%95%20%D7%96%D7%9E%D7%9F%20%D7%9C%D7%A4%D7%92%D7%99%D7%A9%D7%94%3A%20https%3A%2F%2Fcal.com%2Fpetruskevich%2F30min\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2460
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send Cal.com booking URL"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_11 booking confirmed",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"booking\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 1100,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "done",
+                  "booking_confirmed": "true",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2640
+                },
+                "label": "Mark booking confirmed"
+              }
+            },
+            {
+              "id": 1101,
+              "module": "telegram:SendReplyMessage",
+              "version": 1,
+              "parameters": {
+                "__IMTCONN__": 8406260
+              },
+              "mapper": {
+                "chatId": "1034122765",
+                "text": "🎯 NAUJAS LEAD!\n\n📞 Tel: {{11.phone_clean}}\n👤 Vardas: {{10.G}}\n🌐 Saitas: {{10.H}}\n📧 Email: {{10.I}}\n\n🛠 Paslauga: {{10.E}} → {{10.F}}\n🌍 Kalba: {{11.language}}\n📅 Susitikimas: https://cal.com/petruskevich/30min\n\n🕒 {{11.now_iso}}",
+                "parseMode": "",
+                "disableNotification": false
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2640
+                },
+                "label": "Send Telegram lead alert"
+              }
+            }
+          ]
+        },
+        {
+          "filter": {
+            "name": "ROUTE_12 freechat AI placeholder to lead capture",
+            "conditions": [
+              [
+                {
+                  "a": "{{10.`__ROW_NUMBER__`}}",
+                  "o": "exist"
+                },
+                {
+                  "a": "{{if(11.current_step = \"freechat\"; \"true\"; \"false\")}}",
+                  "o": "text:equal",
+                  "b": "true"
+                }
+              ]
+            ]
+          },
+          "flow": [
+            {
+              "id": 1200,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "current_step": "collect_name",
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 2820
+                },
+                "label": "Freechat lead trigger -> collect name"
+              }
+            },
+            {
+              "id": 1201,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&Body={{if(11.language = \"lt\"; \"Koks%20tavo%20vardas%3F\"; if(11.language = \"ru\"; \"%D0%9A%D0%B0%D0%BA%20%D0%B2%D0%B0%D1%81%20%D0%B7%D0%BE%D0%B2%D1%83%D1%82%3F\"; if(11.language = \"en\"; \"What%20is%20your%20name%3F\"; \"%D7%9E%D7%94%20%D7%A9%D7%9E%D7%9A%3F\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 2820
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Ask name from freechat"
+              }
+            }
+          ]
+        },
+        {
+          "flow": [
+            {
+              "id": 1300,
+              "module": "google-sheets:updateRow",
+              "version": 2,
+              "parameters": {
+                "__IMTCONN__": 8110896
+              },
+              "mapper": {
+                "spreadsheetId": "1rTDUt_j4LHa9_rGFBpj_977YoQcM0jxMOp_NjMzWlPk",
+                "rowNumber": "{{10.__ROW_NUMBER__}}",
+                "values": {
+                  "last_message_at": "{{11.now_iso}}"
+                },
+                "sheetId": "whatsapp",
+                "from": "drive",
+                "mode": "select",
+                "useColumnHeaders": false,
+                "includesHeaders": true,
+                "valueInputOption": "USER_ENTERED",
+                "tableFirstRow": "A1:O1"
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1500,
+                  "y": 3000
+                },
+                "label": "Touch last_message_at on fallback"
+              }
+            },
+            {
+              "id": 1301,
+              "module": "http:ActionSendData",
+              "version": 3,
+              "parameters": {
+                "handleErrors": false,
+                "useNewZLibDeCompress": true
+              },
+              "mapper": {
+                "ca": "",
+                "qs": [],
+                "url": "https://api.twilio.com/2010-04-01/Accounts/{TWILIO_ACCOUNT_SID}/Messages.json",
+                "data": "From=whatsapp%3A%2B972533304556&To={{replace(replace(1.From; \":\"; \"%3A\"); \"+\"; \"%2B\")}}&ContentSid={{if(11.language = \"lt\"; \"HXe338436704251b5c78ecc25232a6650e\"; if(11.language = \"ru\"; \"HX254ccbbe31fa801750d5aa7de767a117\"; if(11.language = \"en\"; \"HX9c51695db9ee1994ef1113d8f2ffe532\"; \"HX5d3daabfe24750c88dc36b00f6da9107\")))}}",
+                "gzip": true,
+                "method": "post",
+                "headers": [],
+                "timeout": "30",
+                "useMtls": false,
+                "authPass": "{TWILIO_API_KEY_SECRET}",
+                "authUser": "{TWILIO_API_KEY_SID}",
+                "bodyType": "raw",
+                "contentType": "text/plain",
+                "serializeUrl": false,
+                "shareCookies": false,
+                "parseResponse": true,
+                "followRedirect": true,
+                "useQuerystring": false,
+                "followAllRedirects": false,
+                "rejectUnauthorized": true
+              },
+              "metadata": {
+                "designer": {
+                  "x": 1800,
+                  "y": 3000
+                },
+                "restore": {
+                  "expect": {
+                    "qs": {
+                      "mode": "chose"
+                    },
+                    "method": {
+                      "mode": "chose",
+                      "label": "POST"
+                    },
+                    "headers": {
+                      "mode": "chose"
+                    },
+                    "bodyType": {
+                      "label": "Raw"
+                    },
+                    "contentType": {
+                      "label": "Text (text/plain)"
+                    }
+                  }
+                },
+                "parameters": [
+                  {
+                    "name": "handleErrors",
+                    "type": "boolean",
+                    "label": "Evaluate all states as errors (except for 2xx and 3xx )",
+                    "required": true
+                  },
+                  {
+                    "name": "useNewZLibDeCompress",
+                    "type": "hidden"
+                  }
+                ],
+                "label": "Send error_{lang}"
+              }
+            }
+          ],
+          "fallback": true
+        }
+      ]
+    }
+  ],
+  "metadata": {
+    "zone": "us2.make.com",
+    "notes": [
+      {
+        "text": "W6 FLOW_SPEC implementation draft. Keep Twilio HTTP modules as raw/text/plain with manually URL-encoded data."
+      },
+      {
+        "text": "WebhookRespond must return <Response></Response> and Content-Type text/xml to avoid Twilio sending Make default Accepted string."
+      },
+      {
+        "text": "Scenario update/validation must be performed with Make MCP scenarios_update and executions_list in an environment where those tools are connected."
+      },
+      {
+        "text": "Freechat knowledge base remains a placeholder per FLOW_SPEC TODO; implemented trigger-to-lead only for explicit buying/booking intent words from spec."
+      }
+    ],
+    "instant": true,
+    "version": 2,
+    "designer": {
+      "orphans": []
+    },
+    "scenario": {
+      "dlq": false,
+      "slots": null,
+      "dataloss": false,
+      "maxErrors": 3,
+      "autoCommit": true,
+      "roundtrips": 1,
+      "sequential": false,
+      "confidential": false,
+      "freshVariables": false,
+      "autoCommitTriggerLast": true
+    }
+  },
+  "scheduling": {
+    "type": "immediately"
+  },
+  "interface": {
+    "input": [],
+    "output": []
+  }
+}
