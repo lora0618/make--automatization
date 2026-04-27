@@ -113,3 +113,29 @@ Make WebhookRespond su `body: ""` (tuščiu) grąžino default fallback string `
 - **Twilio Console**: `https://console.twilio.com/`
 - **Hetzner serveris**: `77.42.73.200` (PM2 procesas `whatsapp-bot` pažymėta kaip ne susijęs su problema)
 - **Meta Business**: `https://business.facebook.com/wa/manage/`
+
+---
+
+## Etapas 6: W6 FLOW_SPEC blueprint paruošimas (2026-04-27)
+
+### Padaryta repo faile `W6_blueprint_current.json`
+- Išplėstas W6 blueprint nuo 3 modulių iki pilno FLOW_SPEC maršrutų juodraščio:
+  1. Sheets `searchRows` lookup pagal `phone_clean`.
+  2. `SetVariables` blokas su `phone_clean`, `user_input`, `language`, `current_step`, `is_button_click`.
+  3. `BasicRouter` su maršrutais naujai / pasibaigusiai sesijai, root pasirinkimams, website L1/L2, AI Bot, AI Sekretorė, lead capture, booking, freechat lead trigger ir fallback.
+  4. Sheets `addRow` / `updateRow` veiksmai į sheet `whatsapp`.
+  5. Twilio template siuntimai root / website / aibot / aisec / error šablonams.
+  6. Plain text Twilio siuntimai vardo, svetainės, email, telefono ir Cal.com URL klausimams.
+  7. Telegram lead alert per connection `8406260` į chat ID `1034122765`.
+- Paliktas kritinis WebhookRespond fix: body `<Response></Response>`, header `Content-Type: text/xml`.
+- Visi Twilio HTTP moduliai palikti su veikiančia schema:
+  - `bodyType: "raw"`
+  - `contentType: "text/plain"`
+  - `data` kaip manualiai URL-encoded string.
+- Nenaudota `application/x-www-form-urlencoded` ir nenaudota `x_www_form_urlencoded`.
+- Freechat knowledge base neplėsta, nes FLOW_SPEC turi TODO ir neleidžia išgalvoti FAQ / kainų / paslaugų turinio.
+
+### Make MCP vykdymo būsena
+- Šioje Cursor Cloud aplinkoje Make MCP įrankiai `scenarios_update` ir `executions_list` nebuvo prijungti / nebuvo matomi agentui.
+- Dėl to scenarijaus ID `4866621` atnaujinimas Make paskyroje ir `executions_list` BundleValidationError patikra nebuvo įvykdyti iš šio repo darbo.
+- Paruoštą `W6_blueprint_current.json` reikia kelti per Make MCP `scenarios_update` aplinkoje, kurioje tie įrankiai prijungti, ir po kiekvieno modulio pataisymo tikrinti `executions_list`.
